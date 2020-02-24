@@ -24,6 +24,7 @@ static int current_buffer;
 static int writer_current_buffer;
 static int bufpos[2];
 static char buffers[2][BUFSIZE];
+static long long max_diff = 0;
 
 static
 int64_t read_nanos(int type)
@@ -58,9 +59,15 @@ void handle_timer_tick(void)
 	}
 
 	long long diff = (long long)(nanos - target_nanos);
+    if (diff > max_diff) {
+        max_diff = diff;
+    }
 	int srv = snprintf(buffers[current] + pos, BUFSIZE - pos,
-			   "%.9f %lld\n",
-			   read_nanos(CLOCK_REALTIME) * (double)1E-9, diff);
+			   "%.9f ns:%lld, us:%lld, ms:%lld "
+               "(max ns:%lld, us:%lld, ms:%lld)\n",
+			   read_nanos(CLOCK_REALTIME) * (double)1E-9,
+               diff, diff/1000, diff/1000/1000,
+               max_diff, max_diff/1000, max_diff/1000/1000);
 	bufpos[current] = int_min(pos + srv, BUFSIZE);
 
 	target_nanos += 1000000000LL;
